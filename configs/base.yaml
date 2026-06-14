@@ -1,0 +1,73 @@
+seed: 42
+paths:
+  raw_data: artifacts/raw
+  processed: artifacts/processed
+  split: artifacts/split
+  split_dir: artifacts/split
+  metrics: artifacts/metrics.json
+  metrics_dir: artifacts/metrics
+
+data:
+  competition: h-and-m-personalized-fashion-recommendations
+  raw_dir: artifacts/raw
+  processed_dir: artifacts/processed
+  files: [transactions_train.csv, articles.csv]   # изображения для проекта не нужны
+  sample:
+    last_n_months: 6
+    max_users: null         # null - использовать всех пользователей
+  kcore:
+    min_user_interactions: 5
+    min_item_interactions: 5
+  dedup_grain: [user_id, item_id, t_dat]
+  tie_break: article_id
+
+split:
+  strategy: leave_last_one_out
+  min_days: 3                    # нужны отдельные train, validation и test-дни
+  red_flag_repeat_drop_frac: 0.40
+  # Плотный item_id сохраняет порядок article_id, поэтому min item_id можно
+  # использовать как стабильный tie-break внутри дня.
+
+eval:
+  k_values: [10, 20]
+models:
+  popularity:
+    half_life_days: 30
+  itemknn:
+    k_neighbors: 200
+    aggregation: sum        # sum | recency_decay
+  als:
+    factors: 128
+    regularization: 0.01
+    iterations: 20
+    alpha: 40
+  bpr:
+    factors: 128
+    regularization: 0.01
+    iterations: 100
+    learning_rate: 0.01
+  sasrec:
+    max_seq_len: 50
+    # next_day не вводит искусственный порядок покупок внутри одной корзины.
+    transition_mode: next_day
+    d_model: 64
+    train_batch: 2048
+    epochs: 60
+    seed: 2026
+    reproducibility: true
+    # RecBole используется для обучения. Итоговые метрики считает src/eval.
+    # test.inter здесь повторяет valid.inter, так как RecBole ожидает три файла.
+    recbole:
+      model: SASRec
+      MAX_ITEM_LIST_LENGTH: 50
+      hidden_size: 64
+      n_layers: 2
+      n_heads: 2
+      train_batch_size: 2048
+      epochs: 60
+      loss_type: CE
+      benchmark_filename: [train, valid, test]
+      eval_args: {order: TO, mode: full}
+mlflow:
+  tracking_uri: file:./mlruns
+  experiment: recsys-tbank

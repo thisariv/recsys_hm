@@ -1,0 +1,15 @@
+# Проверено на Python 3.11.
+# RecBole и implicit требуют NumPy 1.x.
+numpy==1.26.4
+pandas==2.2.2
+scipy==1.13.1
+implicit==0.7.2
+recbole==1.2.0
+sentence-transformers==2.7.0
+faiss-cpu==1.8.0
+mlflow==2.14.1
+pyyaml==6.0.1
+pytest==8.2.2
+torch==2.2.2
+pyarrow==15.0.2
+kaggle==1.6.17

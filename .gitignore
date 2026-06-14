@@ -1,0 +1,27 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+.DS_Store
+.claude/
+log_tensorboard/
+saved/
+upload/
+kaggle_upload/
+
+.env
+.env.*
+!.env.example
+
+# Kaggle credentials — токен в git попасть не должен
+kaggle.json
+.kaggle/
+
+# Сырые/обработанные данные (гигабайты) — храним структуру, не содержимое
+artifacts/raw/
+artifacts/processed/
+artifacts/*
+!artifacts/.gitkeep
+mlruns/*
+!mlruns/.gitkeep
