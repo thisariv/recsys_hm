@@ -1,41 +1,41 @@
 # Recommender Systems on H&M Data
 
-Пет-проект, в котором я сравниваю несколько подходов к рекомендациям на данных
-[H&M Personalized Fashion Recommendations](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations).
+A personal project comparing several recommendation approaches on the
+[H&M Personalized Fashion Recommendations](https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations) data.
 
-Мне было интересно проверить, обязательно ли сложные нейросетевые модели выигрывают у классических
-методов на разреженных данных с короткой историей покупок. Оказалось, что в моём эксперименте лучший
-результат показала EASE - простая линейная item-item модель.
+I wanted to check whether complex neural models really beat classical methods on sparse data with
+short purchase histories. In my experiments they didn't: the best result came from EASE, a simple
+linear item-to-item model.
 
-## Что есть в проекте
+## What's inside
 
-- подготовка и фильтрация данных H&M;
-- temporal leave-last-out split без использования будущих покупок;
-- единый evaluation pipeline для всех моделей;
-- full-catalog ranking по 35 411 товарам;
-- метрики Recall, NDCG и MRR;
-- тесты для сплита, метрик, моделей и проверки утечек;
-- небольшой эксперимент с двухэтапной схемой retrieve -> rerank.
+- H&M data preparation and filtering
+- a temporal leave-last-out split that never uses future purchases
+- one evaluation pipeline shared by all models
+- ranking over the full catalogue of 35,411 items
+- Recall, NDCG and MRR
+- tests for the split, metrics, models and data leakage
+- a small two-stage retrieve → rerank experiment
 
-Я попробовал:
+Models I tried:
 
-- Popularity и Popularity Decay;
-- ItemKNN;
-- ALS и BPR;
-- EASE;
-- SASRec и GRU4Rec;
-- Mult-VAE;
-- LightGBM-реранкер поверх кандидатов EASE.
+- Popularity and Popularity Decay
+- ItemKNN
+- ALS and BPR
+- EASE
+- SASRec and GRU4Rec
+- Mult-VAE
+- a LightGBM reranker on top of EASE candidates
 
-Для LightGCN я подготовил код обучения и адаптер, но итоговый результат пока не добавлял в
-сравнение.
+I also wrote training code and an adapter for LightGCN, but haven't added its results to the
+comparison yet.
 
-## Результаты
+## Results
 
-Основная метрика - Recall@20 на validation-выборке. Для каждого пользователя модель ранжирует весь
-каталог, а уже купленные товары исключаются.
+The main metric is Recall@20 on the validation split. For each user, the model ranks the whole
+catalogue, and items the user has already bought are excluded.
 
-| Модель | Recall@20 |
+| Model | Recall@20 |
 |---|---:|
 | Random | 0.0005 |
 | GRU4Rec | 0.0118 |
@@ -48,37 +48,36 @@
 | ALS | 0.0491 |
 | **EASE** | **0.0560** |
 
-В этом датасете классические модели оказались сильнее sequential-подходов. Моя рабочая гипотеза:
-для покупок H&M важнее совместная встречаемость товаров, чем их строгий порядок во времени.
+On this data the classical models did better than the sequential ones. My working guess is that for
+H&M purchases, which items get bought together matters more than the exact order they are bought in.
 
-Отдельно я попробовал LightGBM-реранкер, который получает top-100 кандидатов от EASE и использует
-скоры нескольких моделей вместе с признаками товаров. На тестовой выборке он улучшил Recall@20
-с `0.0419` до `0.0550`.
+I also tried a LightGBM reranker that takes the top 100 candidates from EASE and combines scores from
+several models with item features. On the test split it raised Recall@20 from `0.0419` to `0.0550`.
 
-Эти результаты относятся только к выбранному сплиту, настройкам моделей и данным H&M. Я не считаю
-их универсальным выводом о классических и нейросетевых рекомендательных системах.
+These results hold only for this split, these model settings and the H&M data. I don't see them as
+a general conclusion about classical versus neural recommenders.
 
-## Как устроена оценка
+## How evaluation works
 
-Для каждого пользователя:
+For each user:
 
-1. Последняя новая покупка используется как test target.
-2. Предпоследняя новая покупка используется как validation target.
-3. Более ранние покупки попадают в train.
-4. Уже купленные пользователем товары маскируются.
-5. Метрики считаются по полному каталогу без sampled negatives.
+1. The last purchase of an item they hadn't bought before is the test target.
+2. The one before it is the validation target.
+3. Everything earlier goes into training.
+4. Items the user has already bought are masked out.
+5. Metrics are computed over the full catalogue, with no sampled negatives.
 
-Все модели оцениваются одним кодом из `src/eval/`.
+All models are evaluated by the same code in `src/eval/`.
 
-## Запуск
+## Running it
 
-Проект рассчитан на Python 3.11.
+The project targets Python 3.11.
 
 ```bash
 make install
 ```
 
-Для скачивания данных нужен аккаунт Kaggle, принятые правила соревнования и настроенный
+Downloading the data needs a Kaggle account, accepted competition rules and a configured
 `~/.kaggle/kaggle.json`.
 
 ```bash
@@ -87,7 +86,7 @@ make prep
 make split
 ```
 
-Запуск оценки:
+To run an evaluation:
 
 ```bash
 .venv/bin/python -m src.cli eval \
@@ -96,30 +95,30 @@ make split
   --config configs/base.yaml
 ```
 
-Доступные имена моделей:
+Available model names:
 
 ```text
 random, popularity, popularity_decay, itemknn, als, bpr,
 ease, sasrec, gru4rec, multivae, lightgcn
 ```
 
-Некоторые тяжёлые модели обучались на Kaggle. Для их локальной оценки нужны соответствующие
-чекпойнты в `artifacts/`. Данные, веса моделей и результаты запусков не хранятся в Git.
+Some of the heavier models were trained on Kaggle. To evaluate them locally, put their checkpoints in
+`artifacts/`. Data, model weights and run outputs are not stored in Git.
 
-Запуск тестов:
+To run the tests:
 
 ```bash
 make test
 ```
 
-## Структура
+## Project structure
 
 ```text
-configs/    конфигурация экспериментов
-scripts/    скрипты для локальных и Kaggle-запусков
-src/data/   загрузка, подготовка и split
-src/eval/   метрики и общий evaluation pipeline
-src/models/ реализации и адаптеры моделей
-src/rerank/ признаки для реранкера
-tests/      тесты
+configs/    experiment configs
+scripts/    scripts for local and Kaggle runs
+src/data/   data loading, preparation and the split
+src/eval/   metrics and the shared evaluation pipeline
+src/models/ model implementations and adapters
+src/rerank/ features for the reranker
+tests/      tests
 ```
